@@ -189,9 +189,31 @@ app.post("/api/v1/clients",auth,(req,res)=>{
   event("create","client",cid,cid,b); res.status(201).json(db.prepare("SELECT * FROM clients WHERE id=?").get(cid));
 });
 
-app.get("/api/v1/sites",auth,(req,res)=>{
-  const cid=requireClient(req,res); if(!cid)return;
-  res.json(db.prepare("SELECT * FROM sites WHERE client_id=? ORDER BY name").all(cid));
+app.get("/api/v1/sites",auth,async (req,res)=>{
+  const cid=requireClient(req,res);
+  if(!cid)return;
+
+  try{
+
+    const result=await pool.query(
+      `SELECT *
+       FROM sites
+       WHERE client_id=$1
+       ORDER BY name`,
+      [cid]
+    );
+
+    res.json(result.rows);
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL GET sites :",error);
+
+    res.status(500).json({
+      message:"Erreur récupération sites",
+      error:error.message
+    });
+  }
 });
 
 app.get("/api/v1/machines",auth,(req,res)=>{
