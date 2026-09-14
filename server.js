@@ -55,16 +55,16 @@ async function event(type,objType,objId,clientId,payload){
         type,
         objType,
         objId,
-        clientId||"",
-        JSON.stringify(payload||{}),
+        clientId || "",
+        JSON.stringify(payload || {}),
         now()
       ]
     );
-
   }catch(error){
     console.error("Erreur PostgreSQL event :",error);
+  }
 }
-  
+
 function requireClient(req,res){
   const cid=clientScope(req);
 
@@ -77,7 +77,6 @@ function requireClient(req,res){
 
   return cid;
 }
-
 app.get("/api/v1/health",(req,res)=>res.json({status:"ok",service:"Gigan Maintenance AI API",version:"8.0.0",time:now()}));
 
 app.post("/api/v1/auth/login", async (req,res)=>{
