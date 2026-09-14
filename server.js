@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
-const { testPostgres } = require("./db-postgres");
+const { initPostgres } = require("./db-postgres");
 const Database = require("better-sqlite3");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
@@ -156,8 +156,6 @@ app.use((err,req,res,next)=>{
   res.status(500).json({message:"Erreur serveur"});
 });
 
-testPostgres()
-  .then(() => console.log("Test PostgreSQL réussi"))
-  .catch(err => console.error("Test PostgreSQL échoué :", err.message));
-
-app.listen(PORT,()=>console.log(`Gigan Maintenance AI V8 API listening on port ${PORT}`));
+initPostgres()
+  .then(() => console.log("Initialisation PostgreSQL réussie"))
+  .catch(err => console.error("Initialisation PostgreSQL échouée :", err.message));
