@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
-const { initPostgres, testClientPostgres } = require("./db-postgres");
+const { pool, initPostgres, testClientPostgres } = require("./db-postgres");
 const Database = require("better-sqlite3");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
