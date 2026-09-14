@@ -403,9 +403,33 @@ app.post("/api/v1/interventions",auth,(req,res)=>{
   event("create","intervention",iid,cid,b); res.status(201).json(db.prepare("SELECT * FROM interventions WHERE id=?").get(iid));
 });
 
-app.get("/api/v1/interventions",auth,(req,res)=>{
-  const cid=requireClient(req,res); if(!cid)return;
-  res.json({items:db.prepare("SELECT * FROM interventions WHERE client_id=? ORDER BY date DESC").all(cid)});
+app.get("/api/v1/interventions",auth,async (req,res)=>{
+  const cid=requireClient(req,res);
+  if(!cid)return;
+
+  try{
+
+    const result=await pool.query(
+      `SELECT *
+       FROM interventions
+       WHERE client_id=$1
+       ORDER BY date DESC`,
+      [cid]
+    );
+
+    res.json({
+      items:result.rows
+    });
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL GET interventions :",error);
+
+    res.status(500).json({
+      message:"Erreur récupération interventions",
+      error:error.message
+    });
+  }
 });
 
 app.post("/api/v1/knowledge",auth,(req,res)=>{
