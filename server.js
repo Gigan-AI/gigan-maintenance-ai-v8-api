@@ -163,3 +163,5 @@ initPostgres()
   })
   .then(() => console.log("Test client PostgreSQL réussi"))
   .catch(err => console.error("Test PostgreSQL échoué :", err.message));
+
+app.listen(PORT,()=>console.log(`Gigan Maintenance AI V8 API listening on port ${PORT}`));
