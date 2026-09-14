@@ -96,21 +96,106 @@ app.get("/api/v1/machines/:id",auth,(req,res)=>{
   res.json(m);
 });
 
-app.post("/api/v1/demands",auth,(req,res)=>{
-  const cid=requireClient(req,res); if(!cid)return;
-  const b=req.body||{}, did=b.id||id("GMEM-DEM"), t=now();
-  const existing=db.prepare("SELECT id FROM demands WHERE id=?").get(did);
-  if(existing){
-    db.prepare("UPDATE demands SET updated_at=?,status=?,priority=?,symptom=?,contact=?,machine_id=?,machine_name=? WHERE id=?")
-      .run(t,b.status||"Nouvelle",b.priority||"Normale",b.symptom||"",b.contact||"",b.machineId||b.machine_id||null,b.machineName||b.machine_name||"",did);
-  } else {
-    db.prepare(`INSERT INTO demands(id,client_id,machine_id,machine_name,priority,contact,symptom,status,ai_status,technician_note,created_at,updated_at,synced_at)
-      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(did,cid,b.machineId||b.machine_id||null,b.machineName||b.machine_name||"",b.priority||"Normale",b.contact||"",b.symptom||"",b.status||"Nouvelle","A analyser","",b.createdAt||t,t,t);
+app.post("/api/v1/demands",auth,async (req,res)=>{
+  const cid=requireClient(req,res);
+  if(!cid)return;
+
+  const b=req.body||{};
+  const did=b.id||id("GMEM-DEM");
+  const t=now();
+
+  try{
+    const existing=await pool.query(
+      `SELECT id
+       FROM demands
+       WHERE id=$1`,
+      [did]
+    );
+
+    if(existing.rows.length){
+      await pool.query(
+        `UPDATE demands
+         SET updated_at=$1,
+             status=$2,
+             priority=$3,
+             symptom=$4,
+             contact=$5,
+             machine_id=$6,
+             machine_name=$7
+         WHERE id=$8`,
+        [
+          t,
+          b.status||"Nouvelle",
+          b.priority||"Normale",
+          b.symptom||"",
+          b.contact||"",
+          b.machineId||b.machine_id||null,
+          b.machineName||b.machine_name||"",
+          did
+        ]
+      );
+
+    }else{
+
+      await pool.query(
+        `INSERT INTO demands
+        (
+          id,
+          client_id,
+          machine_id,
+          machine_name,
+          priority,
+          contact,
+          symptom,
+          status,
+          ai_status,
+          technician_note,
+          created_at,
+          updated_at,
+          synced_at
+        )
+        VALUES
+        (
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
+        )`,
+        [
+          did,
+          cid,
+          b.machineId||b.machine_id||null,
+          b.machineName||b.machine_name||"",
+          b.priority||"Normale",
+          b.contact||"",
+          b.symptom||"",
+          b.status||"Nouvelle",
+          "A analyser",
+          "",
+          b.createdAt||t,
+          t,
+          t
+        ]
+      );
+    }
+
+    console.log("DEMANDE POSTGRESQL OK",did,cid);
+
+    const result=await pool.query(
+      `SELECT *
+       FROM demands
+       WHERE id=$1`,
+      [did]
+    );
+
+    res.status(existing.rows.length?200:201).json(result.rows[0]);
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL POST demands :",error);
+
+    res.status(500).json({
+      message:"Erreur serveur",
+      error:error.message
+    });
   }
-  console.log("DEMANDE AVANT EVENT", did, cid);
-  event(existing?"update":"create","demand",did,cid,b);
-  console.log("DEMANDE APRES EVENT", did);
-  res.status(existing?200:201).json(db.prepare("SELECT * FROM demands WHERE id=?").get(did));
 });
 
 app.get("/api/v1/demands",auth,async (req,res)=>{
