@@ -1,4 +1,4 @@
-\
+
 const Database=require("better-sqlite3");
 const db=new Database(process.env.DB_FILE||"./gigan_v8.db");
 const now=()=>new Date().toISOString();
