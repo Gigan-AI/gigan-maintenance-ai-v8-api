@@ -216,9 +216,33 @@ app.get("/api/v1/sites",auth,async (req,res)=>{
   }
 });
 
-app.get("/api/v1/machines",auth,(req,res)=>{
-  const cid=requireClient(req,res); if(!cid)return;
-  res.json({items:db.prepare("SELECT * FROM machines WHERE client_id=? ORDER BY name").all(cid)});
+app.get("/api/v1/machines",auth,async (req,res)=>{
+  const cid=requireClient(req,res);
+  if(!cid)return;
+
+  try{
+
+    const result=await pool.query(
+      `SELECT *
+       FROM machines
+       WHERE client_id=$1
+       ORDER BY name`,
+      [cid]
+    );
+
+    res.json({
+      items:result.rows
+    });
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL GET machines :",error);
+
+    res.status(500).json({
+      message:"Erreur récupération machines",
+      error:error.message
+    });
+  }
 });
 
 app.post("/api/v1/machines",auth,(req,res)=>{
