@@ -1,0 +1,48 @@
+{
+  "version": "8.0",
+  "basePath": "/api/v1",
+  "resources": {
+    "health": [
+      "GET /health"
+    ],
+    "auth": [
+      "POST /auth/login"
+    ],
+    "clients": [
+      "GET /clients",
+      "POST /clients"
+    ],
+    "sites": [
+      "GET /sites"
+    ],
+    "machines": [
+      "GET /machines",
+      "POST /machines",
+      "GET /machines/:id"
+    ],
+    "demands": [
+      "POST /demands",
+      "GET /demands?since=ISO8601",
+      "PATCH /demands/:id"
+    ],
+    "interventions": [
+      "POST /interventions",
+      "GET /interventions"
+    ],
+    "knowledge": [
+      "POST /knowledge",
+      "GET /knowledge"
+    ],
+    "events": [
+      "GET /events"
+    ]
+  },
+  "ids": [
+    "GMEM-CLI-xxxxx",
+    "GMEM-SITE-xxxxx",
+    "GMEM-MAC-xxxxx",
+    "GMEM-DEM-xxxxx",
+    "GMEM-INT-xxxxx",
+    "GMEM-KNW-xxxxx"
+  ]
+}

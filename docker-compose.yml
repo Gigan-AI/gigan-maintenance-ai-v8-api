@@ -1,0 +1,15 @@
+services:
+  gigan-api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_FILE: /data/gigan_v8.db
+      JWT_SECRET: CHANGE-ME-LONG-RANDOM-SECRET
+      ADMIN_TOKEN: CHANGE-ME-ADMIN-TOKEN
+      CLIENT_ACCESS_CODE: CHANGE-ME-CLIENT-CODE
+    volumes:
+      - gigan_data:/data
+volumes:
+  gigan_data:

@@ -1,0 +1,16 @@
+{
+  "name": "gigan-maintenance-ai-v8-api",
+  "version": "8.0.0",
+  "private": true,
+  "description": "API centrale et base SQLite pour Gigan Maintenance AI V8",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
