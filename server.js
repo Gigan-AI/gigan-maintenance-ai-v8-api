@@ -12,6 +12,22 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 const app = express();
 const db = new Database(DB_FILE);
 
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL
+    ? { rejectUnauthorized: false }
+    : false
+});
+
+if (process.env.DATABASE_URL) {
+  pool.query("SELECT NOW()")
+    .then(() => {
+      console.log("PostgreSQL connecté avec succès");
+    })
+    .catch((err) => {
+      console.error("Erreur connexion PostgreSQL :", err.message);
+    });
+}
 app.use(cors({
   origin: true,
   methods: ["GET","POST","PATCH","PUT","OPTIONS"],
