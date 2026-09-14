@@ -181,12 +181,69 @@ app.get("/api/v1/clients",auth,async (req,res)=>{
   }
 });
 
-app.post("/api/v1/clients",auth,(req,res)=>{
-  if(req.user.role!=="admin") return res.status(403).json({message:"Admin requis"});
-  const b=req.body||{}, cid=b.id||id("GMEM-CLI"), t=now();
-  db.prepare(`INSERT INTO clients(id,company,siret,contact,phone,email,address,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)`)
-    .run(cid,b.company||"Client",b.siret||"",b.contact||"",b.phone||"",b.email||"",b.address||"",t,t);
-  event("create","client",cid,cid,b); res.status(201).json(db.prepare("SELECT * FROM clients WHERE id=?").get(cid));
+app.post("/api/v1/clients",auth,async (req,res)=>{
+  if(req.user.role!=="admin"){
+    return res.status(403).json({
+      message:"Admin requis"
+    });
+  }
+
+  const b=req.body||{};
+  const cid=b.id||id("GMEM-CLI");
+  const t=now();
+
+  try{
+
+    await pool.query(
+      `INSERT INTO clients
+      (
+        id,
+        company,
+        siret,
+        contact,
+        phone,
+        email,
+        address,
+        created_at,
+        updated_at
+      )
+      VALUES
+      (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9
+      )`,
+      [
+        cid,
+        b.company||"Client",
+        b.siret||"",
+        b.contact||"",
+        b.phone||"",
+        b.email||"",
+        b.address||"",
+        t,
+        t
+      ]
+    );
+
+    await event("create","client",cid,cid,b);
+
+    const result=await pool.query(
+      `SELECT *
+       FROM clients
+       WHERE id=$1`,
+      [cid]
+    );
+
+    res.status(201).json(result.rows[0]);
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL POST clients :",error);
+
+    res.status(500).json({
+      message:"Erreur serveur",
+      error:error.message
+    });
+  }
 });
 
 app.get("/api/v1/sites",auth,async (req,res)=>{
