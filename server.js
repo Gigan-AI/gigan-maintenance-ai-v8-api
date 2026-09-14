@@ -302,12 +302,84 @@ app.get("/api/v1/machines",auth,async (req,res)=>{
   }
 });
 
-app.post("/api/v1/machines",auth,(req,res)=>{
-  const cid=requireClient(req,res); if(!cid)return;
-  const b=req.body||{}, mid=b.id||id("GMEM-MAC"), t=now();
-  db.prepare(`INSERT INTO machines(id,client_id,site_id,name,type,brand,model,serial_number,year,location,criticality,technologies,maintenance,documentation,notes,status,created_at,updated_at)
-  VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(mid,cid,b.site_id||null,b.name||"Machine",b.type||"",b.brand||"",b.model||"",b.serial_number||"",b.year||"",b.location||"",b.criticality||"Normale",b.technologies||"",b.maintenance||"",b.documentation||"",b.notes||"",b.status||"Active",t,t);
-  event("create","machine",mid,cid,b); res.status(201).json(db.prepare("SELECT * FROM machines WHERE id=?").get(mid));
+app.post("/api/v1/machines",auth,async (req,res)=>{
+  const cid=requireClient(req,res);
+  if(!cid)return;
+
+  const b=req.body||{};
+  const mid=b.id||id("GMEM-MAC");
+  const t=now();
+
+  try{
+
+    await pool.query(
+      `INSERT INTO machines
+      (
+        id,
+        client_id,
+        site_id,
+        name,
+        type,
+        brand,
+        model,
+        serial_number,
+        year,
+        location,
+        criticality,
+        technologies,
+        maintenance,
+        documentation,
+        notes,
+        status,
+        created_at,
+        updated_at
+      )
+      VALUES
+      (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18
+      )`,
+      [
+        mid,
+        cid,
+        b.site_id||b.siteId||null,
+        b.name||"Machine",
+        b.type||"",
+        b.brand||"",
+        b.model||"",
+        b.serial_number||b.serialNumber||"",
+        b.year||"",
+        b.location||"",
+        b.criticality||"Normale",
+        b.technologies||"",
+        b.maintenance||"",
+        b.documentation||"",
+        b.notes||"",
+        b.status||"Active",
+        t,
+        t
+      ]
+    );
+
+    await event("create","machine",mid,cid,b);
+
+    const result=await pool.query(
+      `SELECT *
+       FROM machines
+       WHERE id=$1`,
+      [mid]
+    );
+
+    res.status(201).json(result.rows[0]);
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL POST machines :",error);
+
+    res.status(500).json({
+      message:"Erreur serveur",
+      error:error.message
+    });
+  }
 });
 
 app.get("/api/v1/machines/:id",auth,(req,res)=>{
