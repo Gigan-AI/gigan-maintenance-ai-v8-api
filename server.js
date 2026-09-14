@@ -524,12 +524,83 @@ app.patch("/api/v1/demands/:id",auth,(req,res)=>{
   res.json(db.prepare("SELECT * FROM demands WHERE id=?").get(d.id));
 });
 
-app.post("/api/v1/interventions",auth,(req,res)=>{
-  const cid=requireClient(req,res); if(!cid)return;
-  const b=req.body||{}, iid=b.id||id("GMEM-INT"), t=now();
-  db.prepare(`INSERT INTO interventions(id,client_id,site_id,machine_id,technician,date,duration_minutes,symptom,diagnosis,measurements,cause,actions,parts,result,recommendations,created_at,updated_at)
-  VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(iid,cid,b.site_id||null,b.machine_id||b.machineId||null,b.technician||"",b.date||t,Number(b.duration_minutes||b.durationMinutes||0),b.symptom||"",b.diagnosis||"",b.measurements||"",b.cause||"",b.actions||"",b.parts||"",b.result||"",b.recommendations||"",t,t);
-  event("create","intervention",iid,cid,b); res.status(201).json(db.prepare("SELECT * FROM interventions WHERE id=?").get(iid));
+app.post("/api/v1/interventions",auth,async (req,res)=>{
+  const cid=requireClient(req,res);
+  if(!cid)return;
+
+  const b=req.body||{};
+  const iid=b.id||id("GMEM-INT");
+  const t=now();
+
+  try{
+
+    await pool.query(
+      `INSERT INTO interventions
+      (
+        id,
+        client_id,
+        site_id,
+        machine_id,
+        technician,
+        date,
+        duration_minutes,
+        symptom,
+        diagnosis,
+        measurements,
+        cause,
+        actions,
+        parts,
+        result,
+        recommendations,
+        created_at,
+        updated_at
+      )
+      VALUES
+      (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+        $11,$12,$13,$14,$15,$16,$17
+      )`,
+      [
+        iid,
+        cid,
+        b.site_id||b.siteId||null,
+        b.machine_id||b.machineId||null,
+        b.technician||"",
+        b.date||t,
+        Number(b.duration_minutes||b.durationMinutes||0),
+        b.symptom||"",
+        b.diagnosis||"",
+        b.measurements||"",
+        b.cause||"",
+        b.actions||"",
+        b.parts||"",
+        b.result||"",
+        b.recommendations||"",
+        t,
+        t
+      ]
+    );
+
+    await event("create","intervention",iid,cid,b);
+
+    const result=await pool.query(
+      `SELECT *
+       FROM interventions
+       WHERE id=$1`,
+      [iid]
+    );
+
+    res.status(201).json(result.rows[0]);
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL POST interventions :",error);
+
+    res.status(500).json({
+      message:"Erreur serveur",
+      error:error.message
+    });
+  }
 });
 
 app.get("/api/v1/interventions",auth,async (req,res)=>{
