@@ -104,10 +104,28 @@ app.post("/api/v1/demands",auth,(req,res)=>{
   res.status(existing?200:201).json(db.prepare("SELECT * FROM demands WHERE id=?").get(did));
 });
 
-app.get("/api/v1/demands",auth,(req,res)=>{
-  const cid=requireClient(req,res); if(!cid)return;
+app.get("/api/v1/demands",auth,async (req,res)=>{
+  const cid=requireClient(req,res); 
+  if(!cid)return;
+
   const since=req.query.since||"1970-01-01T00:00:00.000Z";
-  res.json({items:db.prepare("SELECT * FROM demands WHERE client_id=? AND updated_at>? ORDER BY updated_at DESC").all(cid,since)});
+
+  try{
+    const result=await pool.query(
+      `SELECT *
+       FROM demands
+       WHERE client_id=$1
+       AND updated_at>$2
+       ORDER BY updated_at DESC`,
+      [cid,since]
+    );
+
+    res.json({items:result.rows});
+
+  }catch(error){
+    console.error("Erreur PostgreSQL GET demands :",error);
+    res.status(500).json({message:"Erreur récupération demandes"});
+  }
 });
 
 app.patch("/api/v1/demands/:id",auth,(req,res)=>{
