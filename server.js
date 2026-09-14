@@ -440,9 +440,33 @@ app.post("/api/v1/knowledge",auth,(req,res)=>{
   event("create","knowledge",kid,cid,b); res.status(201).json(db.prepare("SELECT * FROM knowledge WHERE id=?").get(kid));
 });
 
-app.get("/api/v1/knowledge",auth,(req,res)=>{
-  const cid=requireClient(req,res); if(!cid)return;
-  res.json({items:db.prepare("SELECT * FROM knowledge WHERE client_id=? ORDER BY updated_at DESC").all(cid)});
+app.get("/api/v1/knowledge",auth,async (req,res)=>{
+  const cid=requireClient(req,res);
+  if(!cid)return;
+
+  try{
+
+    const result=await pool.query(
+      `SELECT *
+       FROM knowledge
+       WHERE client_id=$1
+       ORDER BY updated_at DESC`,
+      [cid]
+    );
+
+    res.json({
+      items:result.rows
+    });
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL GET knowledge :",error);
+
+    res.status(500).json({
+      message:"Erreur récupération knowledge",
+      error:error.message
+    });
+  }
 });
 
 app.get("/api/v1/events",auth,(req,res)=>{
