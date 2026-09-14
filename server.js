@@ -159,3 +159,5 @@ app.use((err,req,res,next)=>{
 initPostgres()
   .then(() => console.log("Initialisation PostgreSQL réussie"))
   .catch(err => console.error("Initialisation PostgreSQL échouée :", err.message));
+
+app.listen(PORT,()=>console.log(`Gigan Maintenance AI V8 API listening on port ${PORT}`));
