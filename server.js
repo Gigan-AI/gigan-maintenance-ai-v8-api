@@ -382,10 +382,41 @@ app.post("/api/v1/machines",auth,async (req,res)=>{
   }
 });
 
-app.get("/api/v1/machines/:id",auth,(req,res)=>{
-  const m=db.prepare("SELECT * FROM machines WHERE id=?").get(req.params.id);
-  if(!m || (req.user.role!=="admin" && m.client_id!==req.user.clientId)) return res.status(404).json({message:"Machine introuvable"});
-  res.json(m);
+app.get("/api/v1/machines/:id",auth,async (req,res)=>{
+  try{
+
+    const result=await pool.query(
+      `SELECT *
+       FROM machines
+       WHERE id=$1`,
+      [req.params.id]
+    );
+
+    const m=result.rows[0];
+
+    if(
+      !m ||
+      (
+        req.user.role!=="admin" &&
+        m.client_id!==req.user.clientId
+      )
+    ){
+      return res.status(404).json({
+        message:"Machine introuvable"
+      });
+    }
+
+    res.json(m);
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL GET machine :",error);
+
+    res.status(500).json({
+      message:"Erreur récupération machine",
+      error:error.message
+    });
+  }
 });
 
 app.post("/api/v1/demands",auth,async (req,res)=>{
