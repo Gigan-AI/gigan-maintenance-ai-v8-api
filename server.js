@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
+const { testPostgres } = require("./db-postgres");
 const Database = require("better-sqlite3");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
@@ -11,13 +12,6 @@ const JWT_SECRET = process.env.JWT_SECRET || "CHANGE_ME_IN_PRODUCTION";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 const app = express();
 const db = new Database(DB_FILE);
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL
-    ? { rejectUnauthorized: false }
-    : false
-});
 
 function now(){ return new Date().toISOString(); }
 function id(prefix){ return `${prefix}-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`; }
@@ -161,5 +155,9 @@ app.use((err,req,res,next)=>{
   console.error(err);
   res.status(500).json({message:"Erreur serveur"});
 });
+
+testPostgres()
+  .then(() => console.log("Test PostgreSQL réussi"))
+  .catch(err => console.error("Test PostgreSQL échoué :", err.message));
 
 app.listen(PORT,()=>console.log(`Gigan Maintenance AI V8 API listening on port ${PORT}`));
