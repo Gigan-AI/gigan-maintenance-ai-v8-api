@@ -545,14 +545,78 @@ app.get("/api/v1/demands",auth,async (req,res)=>{
   }
 });
 
-app.patch("/api/v1/demands/:id",auth,(req,res)=>{
-  const d=db.prepare("SELECT * FROM demands WHERE id=?").get(req.params.id);
-  if(!d || (req.user.role!=="admin" && d.client_id!==req.user.clientId)) return res.status(404).json({message:"Demande introuvable"});
-  const b=req.body||{}, t=now();
-  db.prepare(`UPDATE demands SET status=COALESCE(?,status),ai_status=COALESCE(?,ai_status),technician_note=COALESCE(?,technician_note),priority=COALESCE(?,priority),updated_at=? WHERE id=?`)
-    .run(b.status||null,b.ai_status||null,b.technician_note||null,b.priority||null,t,d.id);
-  event("update","demand",d.id,d.client_id,b);
-  res.json(db.prepare("SELECT * FROM demands WHERE id=?").get(d.id));
+app.patch("/api/v1/demands/:id",auth,async (req,res)=>{
+  try{
+
+    const result=await pool.query(
+      `SELECT *
+       FROM demands
+       WHERE id=$1`,
+      [req.params.id]
+    );
+
+    const d=result.rows[0];
+
+    if(
+      !d ||
+      (
+        req.user.role!=="admin" &&
+        d.client_id!==req.user.clientId
+      )
+    ){
+      return res.status(404).json({
+        message:"Demande introuvable"
+      });
+    }
+
+    const b=req.body||{};
+    const t=now();
+
+    await pool.query(
+      `UPDATE demands
+       SET
+         status=COALESCE($1,status),
+         ai_status=COALESCE($2,ai_status),
+         technician_note=COALESCE($3,technician_note),
+         priority=COALESCE($4,priority),
+         updated_at=$5
+       WHERE id=$6`,
+      [
+        b.status||null,
+        b.ai_status||null,
+        b.technician_note||null,
+        b.priority||null,
+        t,
+        d.id
+      ]
+    );
+
+    await event(
+      "update",
+      "demand",
+      d.id,
+      d.client_id,
+      b
+    );
+
+    const updated=await pool.query(
+      `SELECT *
+       FROM demands
+       WHERE id=$1`,
+      [d.id]
+    );
+
+    res.json(updated.rows[0]);
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL PATCH demand :",error);
+
+    res.status(500).json({
+      message:"Erreur serveur",
+      error:error.message
+    });
+  }
 });
 
 app.post("/api/v1/interventions",auth,async (req,res)=>{
