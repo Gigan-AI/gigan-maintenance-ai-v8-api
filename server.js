@@ -11,6 +11,14 @@ const DB_FILE = process.env.DB_FILE || "./gigan_v8.db";
 const JWT_SECRET = process.env.JWT_SECRET || "CHANGE_ME_IN_PRODUCTION";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 const app = express();
+
+app.use(cors({
+  origin: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Gigan-Instance"],
+  credentials: false
+}));
+
 const db = new Database(DB_FILE);
 
 function now(){ return new Date().toISOString(); }
