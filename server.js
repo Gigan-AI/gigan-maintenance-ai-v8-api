@@ -49,14 +49,64 @@ function requireClient(req,res){
 
 app.get("/api/v1/health",(req,res)=>res.json({status:"ok",service:"Gigan Maintenance AI API",version:"8.0.0",time:now()}));
 
-app.post("/api/v1/auth/login",(req,res)=>{
+app.post("/api/v1/auth/login", async (req,res)=>{
   const {clientId, accessCode}=req.body||{};
-  if(!clientId || !accessCode) return res.status(400).json({message:"clientId et accessCode requis"});
-  const c=db.prepare("SELECT * FROM clients WHERE id=?").get(clientId);
-  // Initialisation volontairement simple : remplacer par un vrai système d'utilisateurs/Hash en production.
-  if(!c || accessCode !== (process.env.CLIENT_ACCESS_CODE || "GMEM-DEMO")) return res.status(401).json({message:"Identifiants invalides"});
-  const token=jwt.sign({role:"client",clientId:c.id,company:c.company},JWT_SECRET,{expiresIn:"12h"});
-  res.json({token,client:{id:c.id,company:c.company}});
+
+  if(!clientId || !accessCode){
+    return res.status(400).json({
+      message:"clientId et accessCode requis"
+    });
+  }
+
+  try{
+
+    const result=await pool.query(
+      `SELECT *
+       FROM clients
+       WHERE id=$1`,
+      [clientId]
+    );
+
+    const c=result.rows[0];
+
+    // Initialisation volontairement simple :
+    // remplacer par un vrai système d'utilisateurs/Hash en production.
+    if(
+      !c ||
+      accessCode !== (process.env.CLIENT_ACCESS_CODE || "GMEM-DEMO")
+    ){
+      return res.status(401).json({
+        message:"Identifiants invalides"
+      });
+    }
+
+    const token=jwt.sign(
+      {
+        role:"client",
+        clientId:c.id,
+        company:c.company
+      },
+      JWT_SECRET,
+      {expiresIn:"12h"}
+    );
+
+    res.json({
+      token,
+      client:{
+        id:c.id,
+        company:c.company
+      }
+    });
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL login :",error);
+
+    res.status(500).json({
+      message:"Erreur serveur",
+      error:error.message
+    });
+  }
 });
 
 app.get("/api/v1/clients",auth,(req,res)=>{
