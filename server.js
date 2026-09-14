@@ -432,12 +432,78 @@ app.get("/api/v1/interventions",auth,async (req,res)=>{
   }
 });
 
-app.post("/api/v1/knowledge",auth,(req,res)=>{
-  const cid=requireClient(req,res); if(!cid)return;
-  const b=req.body||{}, kid=b.id||id("GMEM-KNW"), t=now();
-  db.prepare(`INSERT INTO knowledge(id,client_id,machine_id,intervention_id,technology,symptom,cause,measurements,diagnosis,solution,part,confidence,source,created_at,updated_at)
-  VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(kid,cid,b.machine_id||b.machineId||null,b.intervention_id||b.interventionId||null,b.technology||"",b.symptom||"",b.cause||"",b.measurements||"",b.diagnosis||"",b.solution||"",b.part||"",b.confidence||"A confirmer",b.source||"",t,t);
-  event("create","knowledge",kid,cid,b); res.status(201).json(db.prepare("SELECT * FROM knowledge WHERE id=?").get(kid));
+app.post("/api/v1/knowledge",auth,async (req,res)=>{
+  const cid=requireClient(req,res);
+  if(!cid)return;
+
+  const b=req.body||{};
+  const kid=b.id||id("GMEM-KNW");
+  const t=now();
+
+  try{
+
+    await pool.query(
+      `INSERT INTO knowledge
+      (
+        id,
+        client_id,
+        machine_id,
+        intervention_id,
+        technology,
+        symptom,
+        cause,
+        measurements,
+        diagnosis,
+        solution,
+        part,
+        confidence,
+        source,
+        created_at,
+        updated_at
+      )
+      VALUES
+      (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
+      )`,
+      [
+        kid,
+        cid,
+        b.machine_id||b.machineId||null,
+        b.intervention_id||b.interventionId||null,
+        b.technology||"",
+        b.symptom||"",
+        b.cause||"",
+        b.measurements||"",
+        b.diagnosis||"",
+        b.solution||"",
+        b.part||"",
+        b.confidence||"A confirmer",
+        b.source||"",
+        t,
+        t
+      ]
+    );
+
+    await event("create","knowledge",kid,cid,b);
+
+    const result=await pool.query(
+      `SELECT *
+       FROM knowledge
+       WHERE id=$1`,
+      [kid]
+    );
+
+    res.status(201).json(result.rows[0]);
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL POST knowledge :",error);
+
+    res.status(500).json({
+      message:"Erreur serveur",
+      error:error.message
+    });
+  }
 });
 
 app.get("/api/v1/documents",auth,async (req,res)=>{
