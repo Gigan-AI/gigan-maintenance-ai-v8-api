@@ -1,7 +1,7 @@
 
 const express = require("express");
 const cors = require("cors");
-const Database = require("better-sqlite3");
+const { Pool } = require("pg");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
