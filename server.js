@@ -37,14 +37,33 @@ function clientScope(req){
   if(req.user.role==="admin") return req.query.clientId || req.body?.clientId || null;
   return req.user.clientId;
 }
-function event(type,objType,objId,clientId,payload){
-  db.prepare(`INSERT INTO api_events(event_type,object_type,object_id,client_id,payload,created_at) VALUES(?,?,?,?,?,?)`)
-    .run(type,objType,objId,clientId||"",JSON.stringify(payload||{}),now());
-}
-function requireClient(req,res){
-  const cid=clientScope(req);
-  if(!cid) { res.status(400).json({message:"clientId requis"}); return null; }
-  return cid;
+async function event(type,objType,objId,clientId,payload){
+  try{
+    await pool.query(
+      `INSERT INTO api_events
+      (
+        event_type,
+        object_type,
+        object_id,
+        client_id,
+        payload,
+        created_at
+      )
+      VALUES
+      ($1,$2,$3,$4,$5,$6)`,
+      [
+        type,
+        objType,
+        objId,
+        clientId||"",
+        JSON.stringify(payload||{}),
+        now()
+      ]
+    );
+
+  }catch(error){
+    console.error("Erreur PostgreSQL event :",error);
+  }
 }
 
 app.get("/api/v1/health",(req,res)=>res.json({status:"ok",service:"Gigan Maintenance AI API",version:"8.0.0",time:now()}));
