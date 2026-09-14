@@ -150,7 +150,37 @@ async function initPostgres() {
 
   console.log("Tables PostgreSQL créées ou déjà présentes");
 }
+async function testClientPostgres() {
 
+  const now = new Date().toISOString();
+
+  await pool.query(`
+    INSERT INTO clients
+    (id, company, siret, contact, phone, email, address, created_at, updated_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    ON CONFLICT (id)
+    DO UPDATE SET
+      company = EXCLUDED.company,
+      updated_at = EXCLUDED.updated_at
+  `, [
+    "GMEM-TEST-PG",
+    "Gigan Maintenance TEST PostgreSQL",
+    "",
+    "Test API",
+    "",
+    "",
+    "",
+    now,
+    now
+  ]);
+
+  const result = await pool.query(
+    "SELECT * FROM clients WHERE id = $1",
+    ["GMEM-TEST-PG"]
+  );
+
+  console.log("Client PostgreSQL TEST :", result.rows[0]);
+}
 module.exports = {
   pool,
   initPostgres
