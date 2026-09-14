@@ -19,8 +19,9 @@ app.use(cors({
   credentials: false
 }));
 
-const db = new Database(DB_FILE);
+app.use(express.json());
 
+const db = new Database(DB_FILE);
 function now(){ return new Date().toISOString(); }
 function id(prefix){ return `${prefix}-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`; }
 function auth(req,res,next){
