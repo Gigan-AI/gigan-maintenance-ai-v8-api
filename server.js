@@ -1,4 +1,4 @@
-
+\
 const express = require("express");
 const cors = require("cors");
 const Database = require("better-sqlite3");
@@ -237,7 +237,9 @@ app.post("/api/v1/demands",auth,(req,res)=>{
     db.prepare(`INSERT INTO demands(id,client_id,machine_id,machine_name,priority,contact,symptom,status,ai_status,technician_note,created_at,updated_at,synced_at)
       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(did,cid,b.machineId||b.machine_id||null,b.machineName||b.machine_name||"",b.priority||"Normale",b.contact||"",b.symptom||"",b.status||"Nouvelle","A analyser","",b.createdAt||t,t,t);
   }
+  console.log("DEMANDE AVANT EVENT", did, cid);
   event(existing?"update":"create","demand",did,cid,b);
+  console.log("DEMANDE APRES EVENT", did);
   res.status(existing?200:201).json(db.prepare("SELECT * FROM demands WHERE id=?").get(did));
 });
 
