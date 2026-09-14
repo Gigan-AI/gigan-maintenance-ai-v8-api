@@ -19,16 +19,6 @@ const pool = new Pool({
     : false
 });
 
-if (process.env.DATABASE_URL) {
-  pool.query("SELECT NOW()")
-    .then(() => {
-      console.log("PostgreSQL connecté avec succès");
-    })
-    .catch((err) => {
-      console.error("Erreur connexion PostgreSQL :", err.message);
-    });
-}
-
  app.use(cors({
 
 function now(){ return new Date().toISOString(); }
