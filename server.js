@@ -63,7 +63,19 @@ async function event(type,objType,objId,clientId,payload){
 
   }catch(error){
     console.error("Erreur PostgreSQL event :",error);
+}
+  
+function requireClient(req,res){
+  const cid=clientScope(req);
+
+  if(!cid){
+    res.status(400).json({
+      message:"clientId requis"
+    });
+    return null;
   }
+
+  return cid;
 }
 
 app.get("/api/v1/health",(req,res)=>res.json({status:"ok",service:"Gigan Maintenance AI API",version:"8.0.0",time:now()}));
