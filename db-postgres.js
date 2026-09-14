@@ -183,5 +183,6 @@ async function testClientPostgres() {
 }
 module.exports = {
   pool,
-  initPostgres
+  initPostgres,
+  testClientPostgres
 };
