@@ -139,9 +139,46 @@ app.post("/api/v1/auth/login", async (req,res)=>{
   }
 });
 
-app.get("/api/v1/clients",auth,(req,res)=>{
-  if(req.user.role!=="admin") return res.json(db.prepare("SELECT id,company,contact,phone,email,address FROM clients WHERE id=?").all(req.user.clientId));
-  res.json(db.prepare("SELECT id,company,contact,phone,email,address,created_at,updated_at FROM clients ORDER BY company").all());
+app.get("/api/v1/clients",auth,async (req,res)=>{
+  try{
+
+    if(req.user.role!=="admin"){
+
+      const result=await pool.query(
+        `SELECT id,company,contact,phone,email,address
+         FROM clients
+         WHERE id=$1`,
+        [req.user.clientId]
+      );
+
+      return res.json(result.rows);
+    }
+
+    const result=await pool.query(
+      `SELECT
+         id,
+         company,
+         contact,
+         phone,
+         email,
+         address,
+         created_at,
+         updated_at
+       FROM clients
+       ORDER BY company`
+    );
+
+    res.json(result.rows);
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL GET clients :",error);
+
+    res.status(500).json({
+      message:"Erreur récupération clients",
+      error:error.message
+    });
+  }
 });
 
 app.post("/api/v1/clients",auth,(req,res)=>{
