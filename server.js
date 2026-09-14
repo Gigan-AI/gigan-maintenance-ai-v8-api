@@ -830,9 +830,33 @@ app.get("/api/v1/documents",auth,async (req,res)=>{
   }
 });
 
-app.get("/api/v1/events",auth,(req,res)=>{
-  if(req.user.role!=="admin") return res.status(403).json({message:"Admin requis"});
-  res.json(db.prepare("SELECT * FROM api_events ORDER BY id DESC LIMIT 500").all());
+app.get("/api/v1/events",auth,async (req,res)=>{
+  if(req.user.role!=="admin"){
+    return res.status(403).json({
+      message:"Admin requis"
+    });
+  }
+
+  try{
+
+    const result=await pool.query(
+      `SELECT *
+       FROM api_events
+       ORDER BY id DESC
+       LIMIT 500`
+    );
+
+    res.json(result.rows);
+
+  }catch(error){
+
+    console.error("Erreur PostgreSQL GET events :",error);
+
+    res.status(500).json({
+      message:"Erreur récupération événements",
+      error:error.message
+    });
+  }
 });
 
 app.use((err,req,res,next)=>{
