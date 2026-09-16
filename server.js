@@ -76,6 +76,74 @@ function requireClient(req,res){
 }
 app.get("/api/v1/health",(req,res)=>res.json({status:"ok",service:"Gigan Maintenance AI API",version:"8.0.0",time:now()}));
 
+app.get("/api/v1/admin/db-check",auth,async (req,res)=>{
+  if(req.user.role!=="admin"){
+    return res.status(403).json({
+      message:"Admin requis"
+    });
+  }
+
+  try{
+
+    // Test direct de la connexion PostgreSQL
+    const dbResult=await pool.query(
+      `SELECT current_database() AS database,
+              current_user AS user,
+              NOW() AS server_time`
+    );
+
+    // Nombre total de machines
+    const countResult=await pool.query(
+      `SELECT COUNT(*)::int AS count
+       FROM machines`
+    );
+
+    // Recherche de notre machine de test
+    const testResult=await pool.query(
+      `SELECT
+         id,
+         name,
+         model,
+         client_id,
+         created_at,
+         updated_at
+       FROM machines
+       WHERE name='TEST POSTGRESQL'
+       ORDER BY created_at DESC
+       LIMIT 1`
+    );
+
+    res.json({
+      database:"postgresql",
+      connected:true,
+
+      database_info:{
+        database:dbResult.rows[0].database,
+        user:dbResult.rows[0].user,
+        server_time:dbResult.rows[0].server_time
+      },
+
+      machines_count:countResult.rows[0].count,
+
+      test_machine:testResult.rows[0]||null
+    });
+
+  }catch(error){
+
+    console.error(
+      "Erreur PostgreSQL DB CHECK :",
+      error
+    );
+
+    res.status(500).json({
+      database:"postgresql",
+      connected:false,
+      message:"Connexion PostgreSQL ou lecture de la base impossible",
+      error:error.message
+    });
+  }
+});
+
 app.post("/api/v1/auth/login", async (req,res)=>{
   const {clientId, accessCode}=req.body||{};
 
