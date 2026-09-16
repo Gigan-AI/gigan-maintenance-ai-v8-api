@@ -416,7 +416,6 @@ app.get("/api/v1/machines/:id",auth,async (req,res)=>{
   }
 });
 
-```javascript
 app.patch("/api/v1/machines/:id",auth,async (req,res)=>{
   try{
 
@@ -536,7 +535,6 @@ app.patch("/api/v1/machines/:id",auth,async (req,res)=>{
     });
   }
 });
-```
 
 app.post("/api/v1/demands",auth,async (req,res)=>{
   const cid=requireClient(req,res);
