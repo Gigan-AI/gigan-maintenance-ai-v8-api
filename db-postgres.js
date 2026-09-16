@@ -154,6 +154,7 @@ async function testClientPostgres() {
 
   const now = new Date().toISOString();
 
+  // Client de test PostgreSQL
   await pool.query(`
     INSERT INTO clients
     (id, company, siret, contact, phone, email, address, created_at, updated_at)
@@ -174,12 +175,33 @@ async function testClientPostgres() {
     now
   ]);
 
+  // Client principal utilisé par Gigan Maintenance AI
+  await pool.query(`
+    INSERT INTO clients
+    (id, company, siret, contact, phone, email, address, created_at, updated_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    ON CONFLICT (id)
+    DO UPDATE SET
+      company = EXCLUDED.company,
+      updated_at = EXCLUDED.updated_at
+  `, [
+    "GMEM-CLI-00001",
+    "Gigan Maintenance Electro-Meca",
+    "",
+    "Gigan Maintenance",
+    "",
+    "",
+    "Réunion",
+    now,
+    now
+  ]);
+
   const result = await pool.query(
     "SELECT * FROM clients WHERE id = $1",
-    ["GMEM-TEST-PG"]
+    ["GMEM-CLI-00001"]
   );
 
-  console.log("Client PostgreSQL TEST :", result.rows[0]);
+  console.log("✅ Client principal GIGAN :", result.rows[0]);
 }
 module.exports = {
   pool,
