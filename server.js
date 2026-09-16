@@ -416,6 +416,128 @@ app.get("/api/v1/machines/:id",auth,async (req,res)=>{
   }
 });
 
+```javascript
+app.patch("/api/v1/machines/:id",auth,async (req,res)=>{
+  try{
+
+    /*
+     * Recherche de la machine par son identifiant permanent.
+     */
+    const result=await pool.query(
+      `SELECT *
+       FROM machines
+       WHERE id=$1`,
+      [req.params.id]
+    );
+
+    const m=result.rows[0];
+
+    /*
+     * Vérification de sécurité :
+     * un client ne peut modifier que ses propres machines.
+     */
+    if(
+      !m ||
+      (
+        req.user.role!=="admin" &&
+        m.client_id!==req.user.clientId
+      )
+    ){
+      return res.status(404).json({
+        message:"Machine introuvable"
+      });
+    }
+
+    const b=req.body||{};
+    const t=now();
+
+    /*
+     * Mise à jour de la machine.
+     * L'identifiant permanent ne change jamais.
+     */
+    await pool.query(
+      `UPDATE machines
+       SET
+         site_id=COALESCE($1,site_id),
+         name=COALESCE($2,name),
+         type=COALESCE($3,type),
+         brand=COALESCE($4,brand),
+         model=COALESCE($5,model),
+         serial_number=COALESCE($6,serial_number),
+         year=COALESCE($7,year),
+         location=COALESCE($8,location),
+         criticality=COALESCE($9,criticality),
+         technologies=COALESCE($10,technologies),
+         maintenance=COALESCE($11,maintenance),
+         documentation=COALESCE($12,documentation),
+         notes=COALESCE($13,notes),
+         status=COALESCE($14,status),
+         updated_at=$15
+       WHERE id=$16`,
+      [
+        b.site_id!==undefined ? b.site_id : b.siteId,
+        b.name,
+        b.type,
+        b.brand,
+        b.model,
+        b.serial_number!==undefined ? b.serial_number : b.serialNumber,
+        b.year,
+        b.location,
+        b.criticality,
+        b.technologies,
+        b.maintenance,
+        b.documentation!==undefined ? b.documentation : b.documents,
+        b.notes,
+        b.status,
+        t,
+        m.id
+      ]
+    );
+
+    /*
+     * Journalisation de la modification.
+     */
+    await event(
+      "update",
+      "machine",
+      m.id,
+      m.client_id,
+      b
+    );
+
+    /*
+     * Retourne la machine réellement enregistrée
+     * dans PostgreSQL.
+     */
+    const updated=await pool.query(
+      `SELECT *
+       FROM machines
+       WHERE id=$1`,
+      [m.id]
+    );
+
+    console.log(
+      "✏️ MACHINE POSTGRESQL MODIFIÉE",
+      m.id
+    );
+
+    res.json(updated.rows[0]);
+
+  }catch(error){
+
+    console.error(
+      "Erreur PostgreSQL PATCH machine :",
+      error
+    );
+
+    res.status(500).json({
+      message:"Erreur modification machine",
+      error:error.message
+    });
+  }
+});
+```
+
 app.post("/api/v1/demands",auth,async (req,res)=>{
   const cid=requireClient(req,res);
   if(!cid)return;
